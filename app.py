@@ -70,8 +70,8 @@ def get_signal(df):
         "SMA50": latest_sma50
     }])
 
-    prediction = float(model.predict(next_day)[0])
-    change_pct = ((prediction - current_price) / current_price) * 100
+prediction = to_float(model.predict(next_day))    
+change_pct = ((prediction - current_price) / current_price) * 100
 
     if change_pct > 1 and latest_ema20 > latest_sma50:
         signal = "BUY"
