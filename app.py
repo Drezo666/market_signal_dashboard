@@ -69,28 +69,30 @@ def get_signal(df):
         "EMA20": latest_ema20,
         "SMA50": latest_sma50
     }])
-
-prediction = to_float(model.predict(next_day))    
+prediction = to_float(model.predict(next_day))
 change_pct = ((prediction - current_price) / current_price) * 100
 
-    if change_pct > 1 and latest_ema20 > latest_sma50:
-        signal = "BUY"
-    elif change_pct < -1 and latest_ema20 < latest_sma50:
-        signal = "SELL"
-    else:
-        signal = "WATCH"
+if change_pct > 1 and latest_ema20 > latest_sma50:
+    signal = "BUY"
 
-    confidence = min(abs(change_pct) * 20, 100)
+elif change_pct < -1 and latest_ema20 < latest_sma50:
+    signal = "SELL"
 
-    trend = "Bullish" if latest_ema20 > latest_sma50 else "Bearish"
+else:
+    signal = "WATCH"
 
-    if latest_rsi > 70:
-        rsi_status = "Overbought"
-    elif latest_rsi < 30:
-        rsi_status = "Oversold"
-    else:
-        rsi_status = "Neutral"
+confidence = min(abs(change_pct) * 20, 100)
 
+trend = "Bullish" if latest_ema20 > latest_sma50 else "Bearish"
+
+if latest_rsi > 70:
+    rsi_status = "Overbought"
+
+elif latest_rsi < 30:
+    rsi_status = "Oversold"
+
+else:
+    rsi_status = "Neutral"
     return {
         "current_price": current_price,
         "prediction": prediction,
