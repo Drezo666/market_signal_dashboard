@@ -21,7 +21,9 @@ st.set_page_config(page_title="Market Signal Dashboard", layout="wide")
 def to_float(value):
     return float(np.array(value).flatten()[0])
 
-
+def to_1d(value):
+    return np.asarray(value).reshape(-1)
+    
 def prepare_data(ticker, period="6mo"):
     data = yf.download(ticker, period=period, progress=False)
 
