@@ -113,7 +113,7 @@ if AUTO_REFRESH_AVAILABLE:
 else:
     st.sidebar.warning("Auto-refresh not installed. Run: pip install streamlit-autorefresh")
 
-watchlist = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ", "BTC-USD", "ETH-USD"]
+watchlist = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ"]
 
 manual_ticker = st.sidebar.text_input("Ticker", "AAPL").upper()
 selected_watch = st.sidebar.selectbox("Quick Watchlist", watchlist)
@@ -213,7 +213,7 @@ st.dataframe(
 
 st.subheader("Multi-Ticker Scanner")
 
-scan_tickers = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ", "BTC-USD", "ETH-USD"]
+scan_tickers = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ"]
 
 scanner_results = []
 
