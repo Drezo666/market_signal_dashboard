@@ -136,8 +136,6 @@ def get_signal(df):
 
 st.sidebar.title("Controls")
 
-email_alerts = st.sidebar.checkbox("Email Alerts", value=False)
-
 if AUTO_REFRESH_AVAILABLE:
     auto_refresh = st.sidebar.checkbox("Auto Refresh", value=False)
 
@@ -157,6 +155,9 @@ ticker = selected_watch if selected_watch else manual_ticker
 period = st.sidebar.selectbox("History", ["6mo", "1y", "2y", "5y"])
 
 st.title("Market Signal Dashboard")
+
+st.subheader("Alert Controls")
+email_alerts = st.checkbox("Email Alerts", value=False)
 
 df = prepare_data(ticker, period)
 
