@@ -46,11 +46,6 @@ def prepare_data(ticker, period="6mo"):
 
 
 def get_signal(df):
-    X = df[["Days", "RSI", "MACD", "MACD_SIGNAL", "EMA20", "SMA50"]]
-    y = df["Close"]
-
-    model = LinearRegression()
-    model.fit(X, y)
 
     latest = df.iloc[-1]
 
@@ -59,6 +54,7 @@ def get_signal(df):
     latest_macd_signal = to_float(latest["MACD_SIGNAL"])
     latest_ema20 = to_float(latest["EMA20"])
     latest_sma50 = to_float(latest["SMA50"])
+
     current_price = to_float(latest["Close"])
 
     next_day = pd.DataFrame([{
@@ -69,31 +65,34 @@ def get_signal(df):
         "EMA20": latest_ema20,
         "SMA50": latest_sma50
     }])
-prediction = to_float(model.predict(next_day))
-change_pct = ((prediction - current_price) / current_price) * 100
 
-if change_pct > 1 and latest_ema20 > latest_sma50:
-    signal = "BUY"
+    prediction = to_float(model.predict(next_day))
 
-elif change_pct < -1 and latest_ema20 < latest_sma50:
-    signal = "SELL"
+    change_pct = ((prediction - current_price) / current_price) * 100
 
-else:
-    signal = "WATCH"
+    if change_pct > 1 and latest_ema20 > latest_sma50:
+        signal = "BUY"
 
-confidence = min(abs(change_pct) * 20, 100)
+    elif change_pct < -1 and latest_ema20 < latest_sma50:
+        signal = "SELL"
 
-trend = "Bullish" if latest_ema20 > latest_sma50 else "Bearish"
+    else:
+        signal = "WATCH"
 
-if latest_rsi > 70:
-    rsi_status = "Overbought"
+    confidence = min(abs(change_pct) * 20, 100)
 
-elif latest_rsi < 30:
-    rsi_status = "Oversold"
+    trend = "Bullish" if latest_ema20 > latest_sma50 else "Bearish"
 
-else:
-    rsi_status = "Neutral"    
-return {
+    if latest_rsi > 70:
+        rsi_status = "Overbought"
+
+    elif latest_rsi < 30:
+        rsi_status = "Oversold"
+
+    else:
+        rsi_status = "Neutral"
+
+    return {
         "current_price": current_price,
         "prediction": prediction,
         "change_pct": change_pct,
@@ -101,11 +100,10 @@ return {
         "confidence": confidence,
         "rsi": latest_rsi,
         "rsi_status": rsi_status,
+        "trend": trend,
         "ema20": latest_ema20,
-        "sma50": latest_sma50,
-        "trend": trend
+        "sma50": latest_sma50
     }
-
 
 st.sidebar.title("Controls")
 
