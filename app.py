@@ -3,6 +3,9 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from sklearn.linear_model import LinearRegression
 from ta.momentum import RSIIndicator
@@ -19,16 +22,42 @@ st.set_page_config(page_title="Market Signal Dashboard", layout="wide")
 
 
 def to_float(value):
-    return float(np.array(value).flatten()[0])
+    return float(np.asarray(value).reshape(-1)[0])
 
+
+def to_1d(value):
+    return np.asarray(value).reshape(-1)
+
+def send_email_alert(subject, message):
+    sender_email = st.secrets["EMAIL_USER"]
+    sender_password = st.secrets["EMAIL_PASSWORD"]
+    receiver_email = st.secrets["ALERT_RECEIVER"]
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = subject
+
+    msg.attach(MIMEText(message, "plain"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
 
 def prepare_data(ticker, period="6mo"):
-    data = yf.download(ticker, period=period, progress=False)
+    try:
+        data = yf.Ticker(ticker).history(period=period, auto_adjust=False)
+    except Exception:
+        data = yf.download(ticker, period=period, progress=False, auto_adjust=False)
 
-    if data.empty:
+    if data is None or data.empty:
+        st.warning(f"No data returned for {ticker}. Try another ticker or refresh.")
         return None
 
-    close = data["Close"].squeeze()
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+
+    close = pd.Series(to_1d(data["Close"]), index=data.index)
 
     data["RSI"] = RSIIndicator(close=close, window=14).rsi()
 
@@ -47,7 +76,7 @@ def prepare_data(ticker, period="6mo"):
 
 def get_signal(df):
     X = df[["Days", "RSI", "MACD", "MACD_SIGNAL", "EMA20", "SMA50"]]
-    y = df["Close"]
+    y = to_1d(df["Close"])
 
     model = LinearRegression()
     model.fit(X, y)
@@ -70,7 +99,7 @@ def get_signal(df):
         "SMA50": latest_sma50
     }])
 
-    prediction = float(model.predict(next_day)[0])
+    prediction = to_float(model.predict(next_day))
     change_pct = ((prediction - current_price) / current_price) * 100
 
     if change_pct > 1 and latest_ema20 > latest_sma50:
@@ -107,6 +136,8 @@ def get_signal(df):
 
 st.sidebar.title("Controls")
 
+email_alerts = st.sidebar.checkbox("Email Alerts", value=False)
+
 if AUTO_REFRESH_AVAILABLE:
     auto_refresh = st.sidebar.checkbox("Auto Refresh", value=False)
 
@@ -116,7 +147,7 @@ if AUTO_REFRESH_AVAILABLE:
 else:
     st.sidebar.warning("Auto-refresh not installed. Run: pip install streamlit-autorefresh")
 
-watchlist = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ", "BTC-USD", "ETH-USD"]
+watchlist = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ"]
 
 manual_ticker = st.sidebar.text_input("Ticker", "AAPL").upper()
 selected_watch = st.sidebar.selectbox("Quick Watchlist", watchlist)
@@ -155,23 +186,23 @@ fig = go.Figure()
 
 fig.add_trace(go.Candlestick(
     x=df.index,
-    open=df["Open"].squeeze(),
-    high=df["High"].squeeze(),
-    low=df["Low"].squeeze(),
-    close=df["Close"].squeeze(),
+    open=to_1d(df["Open"]),
+    high=to_1d(df["High"]),
+    low=to_1d(df["Low"]),
+    close=to_1d(df["Close"]),
     name="Candles"
 ))
 
 fig.add_trace(go.Scatter(
     x=df.index,
-    y=df["EMA20"].squeeze(),
+    y=to_1d(df["EMA20"]),
     mode="lines",
     name="EMA 20"
 ))
 
 fig.add_trace(go.Scatter(
     x=df.index,
-    y=df["SMA50"].squeeze(),
+    y=to_1d(df["SMA50"]),
     mode="lines",
     name="SMA 50"
 ))
@@ -216,7 +247,7 @@ st.dataframe(
 
 st.subheader("Multi-Ticker Scanner")
 
-scan_tickers = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ", "BTC-USD", "ETH-USD"]
+scan_tickers = ["AAPL", "TSLA", "NVDA", "MU", "SPY", "QQQ"]
 
 scanner_results = []
 
@@ -240,7 +271,7 @@ for scan_ticker in scan_tickers:
             "Trend": scan_result["trend"]
         })
 
-    except Exception as e:
+    except Exception:
         scanner_results.append({
             "Ticker": scan_ticker,
             "Current Price": "Error",
@@ -268,5 +299,40 @@ if not top_buy.empty:
     st.success(f"Strongest BUY setup: {best['Ticker']} with {best['Confidence %']}% confidence.")
 else:
     st.info("No strong BUY setups found right now.")
+if email_alerts:
+
+    strong_buys = scanner_df[
+        (scanner_df["Signal"] == "BUY") &
+        (scanner_df["Confidence %"] >= 70)
+    ]
+
+    if not strong_buys.empty:
+
+        best_alert = strong_buys.iloc[0]
+
+        subject = f"Market Alert: {best_alert['Ticker']} BUY Signal"
+
+        message = f"""
+Market Signal Alert
+
+Ticker: {best_alert['Ticker']}
+Signal: {best_alert['Signal']}
+Confidence: {best_alert['Confidence %']}%
+
+Current Price: ${best_alert['Current Price']}
+Predicted Price: ${best_alert['Predicted Price']}
+Expected Move: {best_alert['Expected Move %']}%
+
+RSI: {best_alert['RSI']}
+Trend: {best_alert['Trend']}
+
+Educational signal only. Not financial advice.
+"""
+
+        send_email_alert(subject, message)
+
+        st.success(f"Email alert sent for {best_alert['Ticker']}.")
+
+
 
 st.caption("Educational prototype only. Not financial advice.")
