@@ -92,9 +92,8 @@ elif latest_rsi < 30:
     rsi_status = "Oversold"
 
 else:
-    rsi_status = "Neutral"
-
-     return {
+    rsi_status = "Neutral"    
+return {
         "current_price": current_price,
         "prediction": prediction,
         "change_pct": change_pct,
