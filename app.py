@@ -94,7 +94,7 @@ elif latest_rsi < 30:
 else:
     rsi_status = "Neutral"
 
-return {
+     return {
         "current_price": current_price,
         "prediction": prediction,
         "change_pct": change_pct,
