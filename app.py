@@ -46,6 +46,11 @@ def prepare_data(ticker, period="6mo"):
 
 
 def get_signal(df):
+    X = df[["Days", "RSI", "MACD", "MACD_SIGNAL", "EMA20", "SMA50"]]
+    y = to_1d(df["Close"])
+
+    model = LinearRegression()
+    model.fit(X, y)
 
     latest = df.iloc[-1]
 
@@ -54,7 +59,6 @@ def get_signal(df):
     latest_macd_signal = to_float(latest["MACD_SIGNAL"])
     latest_ema20 = to_float(latest["EMA20"])
     latest_sma50 = to_float(latest["SMA50"])
-
     current_price = to_float(latest["Close"])
 
     next_day = pd.DataFrame([{
@@ -67,28 +71,22 @@ def get_signal(df):
     }])
 
     prediction = to_float(model.predict(next_day))
-
     change_pct = ((prediction - current_price) / current_price) * 100
 
     if change_pct > 1 and latest_ema20 > latest_sma50:
         signal = "BUY"
-
     elif change_pct < -1 and latest_ema20 < latest_sma50:
         signal = "SELL"
-
     else:
         signal = "WATCH"
 
     confidence = min(abs(change_pct) * 20, 100)
-
     trend = "Bullish" if latest_ema20 > latest_sma50 else "Bearish"
 
     if latest_rsi > 70:
         rsi_status = "Overbought"
-
     elif latest_rsi < 30:
         rsi_status = "Oversold"
-
     else:
         rsi_status = "Neutral"
 
@@ -104,8 +102,7 @@ def get_signal(df):
         "ema20": latest_ema20,
         "sma50": latest_sma50
     }
-
-st.sidebar.title("Controls")
+    st.sidebar.title("Controls")
 
 if AUTO_REFRESH_AVAILABLE:
     auto_refresh = st.sidebar.checkbox("Auto Refresh", value=False)
