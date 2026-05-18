@@ -54,7 +54,8 @@ except ImportError:
 
 st.set_page_config(page_title="Market Signal Dashboard", layout="wide")
 
-
+if "sent_alerts" not in st.session_state:
+    st.session_state.sent_alerts = set()
 def to_float(value):
     return float(np.array(value).flatten()[0])
 
@@ -315,5 +316,48 @@ if not top_buy.empty:
     st.success(f"Strongest BUY setup: {best['Ticker']} with {best['Confidence %']}% confidence.")
 else:
     st.info("No strong BUY setups found right now.")
+
+if email_alerts:
+
+    strong_buys = scanner_df[
+        (scanner_df["Signal"] == "BUY") &
+        (scanner_df["Confidence %"] >= 70)
+    ]
+
+    if not strong_buys.empty:
+
+        best_alert = strong_buys.iloc[0]
+
+        subject = f"Market Alert: {best_alert['Ticker']} BUY Signal"
+
+        message = f"""
+Market Signal Alert
+
+Ticker: {best_alert['Ticker']}
+Signal: {best_alert['Signal']}
+Confidence: {best_alert['Confidence %']}%
+
+Current Price: ${best_alert['Current Price']}
+Predicted Price: ${best_alert['Predicted Price']}
+Expected Move: {best_alert['Expected Move %']}%
+
+RSI: {best_alert['RSI']}
+Trend: {best_alert['Trend']}
+
+Educational signal only. Not financial advice.
+"""
+
+        alert_key = f"{best_alert['Ticker']}_{best_alert['Signal']}"
+
+        if alert_key not in st.session_state.sent_alerts:
+
+            send_email_alert(subject, message)
+
+            st.session_state.sent_alerts.add(alert_key)
+
+            st.success(f"Email alert sent for {best_alert['Ticker']}.")
+
+        else:
+            st.info(f"Alert already sent for {best_alert['Ticker']} this session.")
 
 st.caption("Educational prototype only. Not financial advice.")
