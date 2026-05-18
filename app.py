@@ -363,5 +363,125 @@ Educational signal only. Not financial advice.
 
         else:
             st.info(f"Alert already sent for {best_alert['Ticker']} this session.")
+st.subheader("Backtest Results")
+
+backtest_ticker = st.selectbox(
+    "Backtest Ticker",
+    scan_tickers,
+    index=0
+)
+
+backtest_period = st.selectbox(
+    "Backtest Period",
+    ["6mo", "1y", "2y", "5y"],
+    index=1
+)
+
+starting_balance = st.number_input(
+    "Starting Balance",
+    min_value=100.0,
+    value=10000.0,
+    step=100.0
+)
+
+bt_df = prepare_data(backtest_ticker, backtest_period)
+
+if bt_df is not None and not bt_df.empty:
+
+    bt_df = bt_df.copy()
+
+    bt_df["Signal"] = "WATCH"
+
+    bt_df.loc[
+        (bt_df["EMA20"] > bt_df["SMA50"]) &
+        (bt_df["RSI"] < 70),
+        "Signal"
+    ] = "BUY"
+
+    bt_df.loc[
+        (bt_df["EMA20"] < bt_df["SMA50"]) |
+        (bt_df["RSI"] > 75),
+        "Signal"
+    ] = "SELL"
+
+    cash = starting_balance
+    shares = 0
+    position_open = False
+    trades = []
+
+    for i in range(len(bt_df)):
+        price = float(bt_df["Close"].iloc[i])
+        signal = bt_df["Signal"].iloc[i]
+        date = bt_df.index[i]
+
+        if signal == "BUY" and not position_open:
+            shares = cash / price
+            cash = 0
+            position_open = True
+            entry_price = price
+            entry_date = date
+
+        elif signal == "SELL" and position_open:
+            cash = shares * price
+            shares = 0
+            position_open = False
+
+            trade_return = ((price - entry_price) / entry_price) * 100
+
+            trades.append({
+                "Entry Date": entry_date,
+                "Exit Date": date,
+                "Entry Price": round(entry_price, 2),
+                "Exit Price": round(price, 2),
+                "Return %": round(trade_return, 2)
+            })
+
+    final_price = float(bt_df["Close"].iloc[-1])
+
+    if position_open:
+        ending_balance = shares * final_price
+    else:
+        ending_balance = cash
+
+    total_return = ((ending_balance - starting_balance) / starting_balance) * 100
+
+    buy_hold_return = (
+        (float(bt_df["Close"].iloc[-1]) - float(bt_df["Close"].iloc[0]))
+        / float(bt_df["Close"].iloc[0])
+    ) * 100
+
+    trades_df = pd.DataFrame(trades)
+
+    if not trades_df.empty:
+        wins = trades_df[trades_df["Return %"] > 0]
+        win_rate = (len(wins) / len(trades_df)) * 100
+        avg_trade_return = trades_df["Return %"].mean()
+    else:
+        win_rate = 0
+        avg_trade_return = 0
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Starting Balance", f"${starting_balance:,.2f}")
+    col2.metric("Ending Balance", f"${ending_balance:,.2f}")
+    col3.metric("Strategy Return", f"{total_return:.2f}%")
+    col4.metric("Buy & Hold", f"{buy_hold_return:.2f}%")
+
+    col5, col6, col7 = st.columns(3)
+
+    col5.metric("Trades", len(trades_df))
+    col6.metric("Win Rate", f"{win_rate:.1f}%")
+    col7.metric("Avg Trade", f"{avg_trade_return:.2f}%")
+
+    if total_return > buy_hold_return:
+        st.success("Strategy beat buy-and-hold during this period.")
+    else:
+        st.warning("Strategy did not beat buy-and-hold during this period.")
+
+    st.subheader("Trade Log")
+    st.dataframe(trades_df, use_container_width=True)
+
+else:
+    st.error("Backtest data could not be loaded.")
 
 st.caption("Educational prototype only. Not financial advice.")
