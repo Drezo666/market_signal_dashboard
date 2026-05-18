@@ -175,7 +175,7 @@ if email_alerts:
         )
         st.success("Test email sent.")
 
-    if st.button("Reset Sent Alerts"):
+if st.button("Reset Sent Alerts"):
     st.session_state.sent_alerts = set()
     st.success("Sent alerts reset.")
 
