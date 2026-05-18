@@ -171,23 +171,23 @@ else:
     signal_grade = "C Weak"
 
     return {
-        "atr": latest_atr,
-        "stop_loss": stop_loss,
-        "take_profit": take_profit,
-	"risk_reward": risk_reward,
-	"signal_score": signal_score,
-	"signal_grade": signal_grade
-        "current_price": current_price,
-        "prediction": prediction,
-        "change_pct": change_pct,
-        "signal": signal,
-        "confidence": confidence,
-        "rsi": latest_rsi,
-        "rsi_status": rsi_status,
-        "trend": trend,
-        "ema20": latest_ema20,
-        "sma50": latest_sma50
-    }
+    "current_price": current_price,
+    "prediction": prediction,
+    "change_pct": change_pct,
+    "signal": signal,
+    "confidence": confidence,
+    "rsi": latest_rsi,
+    "rsi_status": rsi_status,
+    "trend": trend,
+    "ema20": latest_ema20,
+    "sma50": latest_sma50,
+    "atr": latest_atr,
+    "stop_loss": stop_loss,
+    "take_profit": take_profit,
+    "risk_reward": risk_reward,
+    "signal_score": signal_score,
+    "signal_grade": signal_grade
+}
     st.sidebar.title("Controls")
 
 if AUTO_REFRESH_AVAILABLE:
