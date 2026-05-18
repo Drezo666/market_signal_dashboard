@@ -414,7 +414,7 @@ if bt_df is not None and not bt_df.empty:
     trades = []
 
     for i in range(len(bt_df)):
-        price = float(bt_df["Close"].iloc[i])
+        price = to_float(bt_df["Close"].iloc[i])
         signal = bt_df["Signal"].iloc[i]
         date = bt_df.index[i]
 
@@ -440,7 +440,7 @@ if bt_df is not None and not bt_df.empty:
                 "Return %": round(trade_return, 2)
             })
 
-    final_price = float(bt_df["Close"].iloc[-1])
+    price = to_float(bt_df["Close"].iloc[i])
 
     if position_open:
         ending_balance = shares * final_price
@@ -450,8 +450,8 @@ if bt_df is not None and not bt_df.empty:
     total_return = ((ending_balance - starting_balance) / starting_balance) * 100
 
     buy_hold_return = (
-        (float(bt_df["Close"].iloc[-1]) - float(bt_df["Close"].iloc[0]))
-        / float(bt_df["Close"].iloc[0])
+        (to_float(bt_df["Close"].iloc[-1]) - to_float(bt_df["Close"].iloc[0]))
+/ to_float(bt_df["Close"].iloc[0])
     ) * 100
 
     trades_df = pd.DataFrame(trades)
