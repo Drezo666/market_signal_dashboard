@@ -1,4 +1,28 @@
 import streamlit as st
+import smtplib
+from email.mime.text import MIMEText
+
+def send_email_alert(subject, body):
+    sender_email = st.secrets["EMAIL_USER"]
+    sender_password = st.secrets["EMAIL_PASSWORD"]
+    receiver_email = st.secrets["ALERT_RECEIVER"]
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        server.quit()
+
+        st.success("Email sent successfully!")
+
+    except Exception as e:
+        st.error(f"Email failed: {e}")
 import yfinance as yf
 import pandas as pd
 import numpy as np
