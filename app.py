@@ -123,6 +123,7 @@ def get_signal(df):
     change_pct = ((prediction - current_price) / current_price) * 100
 
     if change_pct > 1 and latest_ema20 > latest_sma50:
+        
         signal = "BUY"
     elif change_pct < -1 and latest_ema20 < latest_sma50:
         signal = "SELL"
@@ -138,56 +139,70 @@ def get_signal(df):
         rsi_status = "Oversold"
     else:
         rsi_status = "Neutral"
+    if signal == "BUY":
+        stop_loss = current_price - (latest_atr * 1.5)
+        take_profit = current_price + (latest_atr * 3)
 
-if signal == "BUY":
-    stop_loss = current_price - (latest_atr * 1.5)
-    take_profit = current_price + (latest_atr * 3)
-elif signal == "SELL":
-    stop_loss = current_price + (latest_atr * 1.5)
-    take_profit = current_price - (latest_atr * 3)
-else:
-    stop_loss = current_price - (latest_atr * 1.5)
-    take_profit = current_price + (latest_atr * 1.5)
+    elif signal == "SELL":
+        stop_loss = current_price + (latest_atr * 1.5)
+        take_profit = current_price - (latest_atr * 3)
 
-risk_amount = abs(current_price - stop_loss)
-reward_amount = abs(take_profit - current_price)
+    else:
+        stop_loss = current_price - (latest_atr * 1.5)
+        take_profit = current_price + (latest_atr * 1.5)
 
-risk_reward = reward_amount / risk_amount if risk_amount != 0 else 0
+    risk_amount = abs(current_price - stop_loss)
+    reward_amount = abs(take_profit - current_price)
 
-trend_points = 25 if trend == "Bullish" and signal == "BUY" else 25 if trend == "Bearish" and signal == "SELL" else 0
-rsi_points = 25 if rsi_status == "Neutral" else 10
-confidence_points = min(confidence / 2, 25)
-rr_points = 25 if risk_reward >= 2 else 10
+    risk_reward = (
+        reward_amount / risk_amount
+        if risk_amount != 0 else 0
+    )
 
-signal_score = trend_points + rsi_points + confidence_points + rr_points
+    trend_points = (
+        25 if trend == "Bullish" and signal == "BUY"
+        else 25 if trend == "Bearish" and signal == "SELL"
+        else 0
+    )
 
-if signal_score >= 85:
-    signal_grade = "A+ High Conviction"
-elif signal_score >= 70:
-    signal_grade = "A Strong"
-elif signal_score >= 55:
-    signal_grade = "B Moderate"
-else:
-    signal_grade = "C Weak"
+    rsi_points = 25 if rsi_status == "Neutral" else 10
+    confidence_points = min(confidence / 2, 25)
+    rr_points = 25 if risk_reward >= 2 else 10
+
+    signal_score = (
+        trend_points +
+        rsi_points +
+        confidence_points +
+        rr_points
+    )
+
+    if signal_score >= 85:
+        signal_grade = "A+ High Conviction"
+    elif signal_score >= 70:
+        signal_grade = "A Strong"
+    elif signal_score >= 55:
+        signal_grade = "B Moderate"
+    else:
+        signal_grade = "C Weak"
 
     return {
-    "current_price": current_price,
-    "prediction": prediction,
-    "change_pct": change_pct,
-    "signal": signal,
-    "confidence": confidence,
-    "rsi": latest_rsi,
-    "rsi_status": rsi_status,
-    "trend": trend,
-    "ema20": latest_ema20,
-    "sma50": latest_sma50,
-    "atr": latest_atr,
-    "stop_loss": stop_loss,
-    "take_profit": take_profit,
-    "risk_reward": risk_reward,
-    "signal_score": signal_score,
-    "signal_grade": signal_grade
-}
+        "current_price": current_price,
+        "prediction": prediction,
+        "change_pct": change_pct,
+        "signal": signal,
+        "confidence": confidence,
+        "rsi": latest_rsi,
+        "rsi_status": rsi_status,
+        "trend": trend,
+        "ema20": latest_ema20,
+        "sma50": latest_sma50,
+        "atr": latest_atr,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit,
+        "risk_reward": risk_reward,
+        "signal_score": signal_score,
+        "signal_grade": signal_grade
+    }    
     st.sidebar.title("Controls")
 
 if AUTO_REFRESH_AVAILABLE:
