@@ -126,6 +126,9 @@ period = st.sidebar.selectbox("History", ["6mo", "1y", "2y", "5y"])
 
 st.title("Market Signal Dashboard")
 
+st.subheader("Alert Controls")
+email_alerts = st.checkbox("Email Alerts", value=False)
+
 df = prepare_data(ticker, period)
 
 if df is None or df.empty:
