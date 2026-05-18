@@ -323,16 +323,19 @@ else:
 
 if email_alerts:
 
-    strong_buys = scanner_df[
-        (scanner_df["Signal"] == "BUY") &
+    strong_alerts = scanner_df[
+        (
+            (scanner_df["Signal"] == "BUY") |
+            (scanner_df["Signal"] == "SELL")
+        ) &
         (scanner_df["Confidence %"] >= 70)
     ]
 
-    if not strong_buys.empty:
+    if not strong_alerts.empty:
 
-        best_alert = strong_buys.iloc[0]
+        best_alert = strong_alerts.iloc[0]
 
-        subject = f"Market Alert: {best_alert['Ticker']} BUY Signal"
+        subject = f"Market Alert: {best_alert['Ticker']} {best_alert['Signal']} Signal"
 
         message = f"""
 Market Signal Alert
@@ -359,10 +362,11 @@ Educational signal only. Not financial advice.
 
             st.session_state.sent_alerts.add(alert_key)
 
-            st.success(f"Email alert sent for {best_alert['Ticker']}.")
+            st.success(f"Email alert sent for {best_alert['Ticker']} {best_alert['Signal']}.")
 
         else:
-            st.info(f"Alert already sent for {best_alert['Ticker']} this session.")
+            st.info(f"Alert already sent for {best_alert['Ticker']} {best_alert['Signal']} this session.")
+
 st.subheader("Backtest Results")
 
 backtest_ticker = st.selectbox(
