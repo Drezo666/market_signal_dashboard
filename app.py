@@ -1,4 +1,5 @@
 import streamlit as st
+from ta.volatility import AverageTrueRange
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -79,6 +80,13 @@ def prepare_data(ticker, period="6mo"):
     data["EMA20"] = EMAIndicator(close=close, window=20).ema_indicator()
     data["SMA50"] = SMAIndicator(close=close, window=50).sma_indicator()
 
+data["ATR"] = AverageTrueRange(
+    high=data["High"].squeeze(),
+    low=data["Low"].squeeze(),
+    close=close,
+    window=14
+).average_true_range()
+
     df = data.dropna().copy()
     df["Days"] = np.arange(len(df))
 
@@ -99,6 +107,7 @@ def get_signal(df):
     latest_macd_signal = to_float(latest["MACD_SIGNAL"])
     latest_ema20 = to_float(latest["EMA20"])
     latest_sma50 = to_float(latest["SMA50"])
+    latest_atr = to_float(latest["ATR"])
     current_price = to_float(latest["Close"])
 
     next_day = pd.DataFrame([{
@@ -130,7 +139,44 @@ def get_signal(df):
     else:
         rsi_status = "Neutral"
 
+if signal == "BUY":
+    stop_loss = current_price - (latest_atr * 1.5)
+    take_profit = current_price + (latest_atr * 3)
+elif signal == "SELL":
+    stop_loss = current_price + (latest_atr * 1.5)
+    take_profit = current_price - (latest_atr * 3)
+else:
+    stop_loss = current_price - (latest_atr * 1.5)
+    take_profit = current_price + (latest_atr * 1.5)
+
+risk_amount = abs(current_price - stop_loss)
+reward_amount = abs(take_profit - current_price)
+
+risk_reward = reward_amount / risk_amount if risk_amount != 0 else 0
+
+trend_points = 25 if trend == "Bullish" and signal == "BUY" else 25 if trend == "Bearish" and signal == "SELL" else 0
+rsi_points = 25 if rsi_status == "Neutral" else 10
+confidence_points = min(confidence / 2, 25)
+rr_points = 25 if risk_reward >= 2 else 10
+
+signal_score = trend_points + rsi_points + confidence_points + rr_points
+
+if signal_score >= 85:
+    signal_grade = "A+ High Conviction"
+elif signal_score >= 70:
+    signal_grade = "A Strong"
+elif signal_score >= 55:
+    signal_grade = "B Moderate"
+else:
+    signal_grade = "C Weak"
+
     return {
+        "atr": latest_atr,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit,
+	"risk_reward": risk_reward,
+	"signal_score": signal_score,
+	"signal_grade": signal_grade
         "current_price": current_price,
         "prediction": prediction,
         "change_pct": change_pct,
@@ -239,6 +285,18 @@ st.subheader("Signal Breakdown")
 
 st.write(f"""
 Ticker: {ticker}
+
+ATR: {result['atr']:.2f}
+
+Stop Loss: ${result['stop_loss']:.2f}
+
+Take Profit: ${result['take_profit']:.2f}
+
+Risk/Reward: {result['risk_reward']:.2f}
+
+Signal Score: {result['signal_score']:.1f}/100
+
+Signal Grade: {result['signal_grade']}
 
 Current Price: ${result['current_price']:.2f}
 
