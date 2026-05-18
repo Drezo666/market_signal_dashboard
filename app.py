@@ -80,12 +80,12 @@ def prepare_data(ticker, period="6mo"):
     data["EMA20"] = EMAIndicator(close=close, window=20).ema_indicator()
     data["SMA50"] = SMAIndicator(close=close, window=50).sma_indicator()
 
-data["ATR"] = AverageTrueRange(
+    data["ATR"] = AverageTrueRange(
     high=data["High"].squeeze(),
     low=data["Low"].squeeze(),
     close=close,
     window=14
-).average_true_range()
+    ).average_true_range()
 
     df = data.dropna().copy()
     df["Days"] = np.arange(len(df))
