@@ -175,6 +175,10 @@ if email_alerts:
         )
         st.success("Test email sent.")
 
+    if st.button("Reset Sent Alerts"):
+    st.session_state.sent_alerts = set()
+    st.success("Sent alerts reset.")
+
 df = prepare_data(ticker, period)
 
 if df is None or df.empty:
