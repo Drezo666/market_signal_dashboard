@@ -440,7 +440,7 @@ if bt_df is not None and not bt_df.empty:
                 "Return %": round(trade_return, 2)
             })
 
-    price = to_float(bt_df["Close"].iloc[i])
+    final_price = to_float(bt_df["Close"].iloc[i])
 
     if position_open:
         ending_balance = shares * final_price
