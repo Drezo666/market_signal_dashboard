@@ -129,6 +129,14 @@ st.title("Market Signal Dashboard")
 st.subheader("Alert Controls")
 email_alerts = st.checkbox("Email Alerts", value=False)
 
+if email_alerts:
+    if st.button("Send Test Email"):
+        send_email_alert(
+            "Test Alert from Market Dashboard",
+            "This is a test email. Your market alert system is connected."
+        )
+        st.success("Test email sent.")
+
 df = prepare_data(ticker, period)
 
 if df is None or df.empty:
