@@ -1,5 +1,6 @@
 import streamlit as st
 from ta.volatility import AverageTrueRange
+from textblob import TextBlob
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -92,8 +93,43 @@ def prepare_data(ticker, period="6mo"):
 
     return df
 
+def get_news_sentiment(ticker):
 
-def get_signal(df):
+    try:
+        stock = yf.Ticker(ticker)
+        news = stock.news
+
+        if not news:
+            return "Neutral", 0
+
+        sentiment_scores = []
+
+        for article in news[:5]:
+
+            title = article.get("title", "")
+
+            polarity = TextBlob(title).sentiment.polarity
+
+            sentiment_scores.append(polarity)
+
+        avg_sentiment = np.mean(sentiment_scores)
+
+        if avg_sentiment > 0.15:
+            sentiment_label = "Bullish News"
+
+        elif avg_sentiment < -0.15:
+            sentiment_label = "Bearish News"
+
+        else:
+            sentiment_label = "Neutral News"
+
+        return sentiment_label, avg_sentiment
+
+    except Exception:
+        return "News Unavailable", 0
+
+
+def get_signal(df, ticker):
     X = df[["Days", "RSI", "MACD", "MACD_SIGNAL", "EMA20", "SMA50"]]
     y = to_1d(df["Close"])
 
@@ -109,6 +145,8 @@ def get_signal(df):
     latest_sma50 = to_float(latest["SMA50"])
     latest_atr = to_float(latest["ATR"])
     current_price = to_float(latest["Close"])
+    
+    news_sentiment, news_score = get_news_sentiment(ticker)
 
     next_day = pd.DataFrame([{
         "Days": len(df),
@@ -210,6 +248,8 @@ def get_signal(df):
         "risk_reward": risk_reward,
         "signal_score": signal_score,
         "signal_grade": signal_grade
+        "news_sentiment": news_sentiment,
+        "news_score": news_score,
     }    
     st.sidebar.title("Controls")
 
@@ -254,7 +294,7 @@ if df is None or df.empty:
     st.error("No market data found.")
     st.stop()
 
-result = get_signal(df)
+result = get_signal(df, ticker)
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -322,6 +362,10 @@ Signal Score: {result['signal_score']:.1f}/100
 Signal Grade: {result['signal_grade']}
 
 Daily Bias: {result['daily_bias']}
+
+News Sentiment: {result['news_sentiment']}
+
+News Score: {result['news_score']:.2f}
 
 Current Price: ${result['current_price']:.2f}
 
