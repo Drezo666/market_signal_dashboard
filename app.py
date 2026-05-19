@@ -185,8 +185,16 @@ def get_signal(df):
     else:
         signal_grade = "C Weak"
 
+    if signal == "BUY" and trend == "Bullish" and latest_rsi < 70:
+        daily_bias = "CALL Bias / Bullish"
+    elif signal == "SELL" and trend == "Bearish" and latest_rsi > 30:
+        daily_bias = "PUT Bias / Bearish"
+    else:
+        daily_bias = "NEUTRAL / Wait"
+
     return {
         "current_price": current_price,
+        "daily_bias": daily_bias,
         "prediction": prediction,
         "change_pct": change_pct,
         "signal": signal,
@@ -252,7 +260,7 @@ col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Current Price", f"${result['current_price']:.2f}")
 col2.metric("Predicted Price", f"${result['prediction']:.2f}")
-col3.metric("Signal", result["signal"])
+col3.metric("Daily Bias", result["daily_bias"])
 col4.metric("Confidence", f"{result['confidence']:.1f}%")
 
 if result["signal"] == "BUY":
@@ -312,6 +320,8 @@ Risk/Reward: {result['risk_reward']:.2f}
 Signal Score: {result['signal_score']:.1f}/100
 
 Signal Grade: {result['signal_grade']}
+
+Daily Bias: {result['daily_bias']}
 
 Current Price: ${result['current_price']:.2f}
 
