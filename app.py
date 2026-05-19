@@ -232,7 +232,6 @@ def get_signal(df, ticker):
 
     return {
         "current_price": current_price,
-        "daily_bias": daily_bias,
         "prediction": prediction,
         "change_pct": change_pct,
         "signal": signal,
@@ -246,10 +245,11 @@ def get_signal(df, ticker):
         "stop_loss": stop_loss,
         "take_profit": take_profit,
         "risk_reward": risk_reward,
-        "signal_score": signal_score,
-        "signal_grade": signal_grade
-        "news_sentiment": news_sentiment,
-        "news_score": news_score,
+	"signal_score": signal_score,
+	"signal_grade": signal_grade,
+	"daily_bias": daily_bias,
+	"news_sentiment": news_sentiment,
+	"news_score": news_score,
     }    
     st.sidebar.title("Controls")
 
